@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 func SendNotification(repo string, r *GitHubRelease) {
@@ -47,7 +48,7 @@ func SendNotification(repo string, r *GitHubRelease) {
 			"text": fmt.Sprintf("### %s\n%s📅 时间: %s\n\n📝 说明:\n%s\n\n[🔗 点击查看详情](%s)",
 				title,
 				contentPrefix,
-				r.PublishedAt.Format("2006-01-02 15:04"),
+				r.PublishedAt.Format(time.DateTime),
 				shortBody,
 				r.HTMLURL),
 		},

@@ -23,6 +23,8 @@ var AlertKeywords = []string{
 var TargetRepos = []string{
 	"ethereum/go-ethereum",
 	"bnb-chain/bsc",
+	"base/node",
+	"anza-xyz/agave",
 }
 
 const StateFile = "state.json"
