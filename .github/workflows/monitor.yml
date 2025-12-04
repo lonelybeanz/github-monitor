@@ -1,0 +1,42 @@
+name: Monitor Multi-Repo Releases
+
+on:
+  schedule:
+    - cron: "0 * * * *" # 每小时运行
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+
+      - name: Run Monitor
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTIFY_WEBHOOK: ${{ secrets.NOTIFY_WEBHOOK }}
+        run: go run main.go
+
+      - name: Commit State Changes
+        run: |
+          git config user.name "Release Monitor Bot"
+          git config user.email "bot@github.com"
+
+          # 检查 state.json 是否有变化
+          if [[ -n $(git status -s state.json) ]]; then
+            echo "📝 检测到状态变化，正在提交..."
+            git add state.json
+            git commit -m "Update release state [skip ci]"
+            git push
+          else
+            echo "💤 状态无变化"
+          fi

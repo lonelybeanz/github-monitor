@@ -1,0 +1,4 @@
+{
+  "bnb-chain/bsc": "v1.6.3",
+  "ethereum/go-ethereum": "v1.16.7"
+}
