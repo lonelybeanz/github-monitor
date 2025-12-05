@@ -19,11 +19,26 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.21"
+          cache: false # <--- 加上这一行！强制关闭缓存功能
+
+      - name: Initialize Go Module
+        # 💡 额外加一步：防止 go run 找不到 module 上下文
+        run: |
+          if [ ! -f go.mod ]; then
+            go mod init monitor
+            go mod tidy
+          fi
 
       - name: Run Monitor
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTIFY_WEBHOOK: ${{ secrets.NOTIFY_WEBHOOK }}
+
+          # --- 🟢 引用 GitHub 网页上配置的 Variables ---
+          TARGET_REPOS: ${{ vars.TARGET_REPOS }}
+          ALERT_KEYWORDS: ${{ vars.ALERT_KEYWORDS }}
+          # ----------------------------------------
+
         run: go run main.go
 
       - name: Commit State Changes

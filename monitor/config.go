@@ -10,27 +10,59 @@ import (
 // --- 配置区域 ---
 
 // 需要重点提醒的关键词（全部小写）
-var AlertKeywords = []string{
-	"hardfork",
-	"hard fork",
-	"security",
-	"vulnerability",
-	"critical",
-	"cve-", // 包含 CVE 漏洞编号
-}
+var AlertKeywords = getAlertKeywordsFromEnv()
 
 // 你可以在这里添加任意数量的仓库
-var TargetRepos = []string{
-	"ethereum/go-ethereum",
-	"bnb-chain/bsc",
-	"base/node",
-	"anza-xyz/agave",
-}
+var TargetRepos = getTargetReposFromEnv()
 
 const StateFile = "state.json"
 
 // State 用于存储所有仓库的最新 Tag: map["owner/repo"] = "tag"
 type State map[string]string
+
+// 从环境变量获取告警关键词列表，如果未设置则使用默认值
+func getAlertKeywordsFromEnv() []string {
+	envValue := os.Getenv("ALERT_KEYWORDS")
+	if envValue == "" {
+		return []string{
+			"hardfork",
+			"hard fork",
+			"security",
+			"vulnerability",
+			"critical",
+			"cve-", // 包含 CVE 漏洞编号
+		}
+	}
+	
+	// 按逗号分割环境变量
+	keywords := strings.Split(envValue, ",")
+	// 清理每个关键词前后的空格
+	for i, kw := range keywords {
+		keywords[i] = strings.TrimSpace(kw)
+	}
+	return keywords
+}
+
+// 从环境变量获取目标仓库列表，如果未设置则使用默认值
+func getTargetReposFromEnv() []string {
+	envValue := os.Getenv("TARGET_REPOS")
+	if envValue == "" {
+		return []string{
+			"ethereum/go-ethereum",
+			"bnb-chain/bsc",
+			"base/node",
+			"anza-xyz/agave",
+		}
+	}
+	
+	// 按逗号分割环境变量
+	repos := strings.Split(envValue, ",")
+	// 清理每个仓库名称前后的空格
+	for i, repo := range repos {
+		repos[i] = strings.TrimSpace(repo)
+	}
+	return repos
+}
 
 func LoadState() State {
 	s := make(State)
