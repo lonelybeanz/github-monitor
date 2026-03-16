@@ -3,7 +3,7 @@
   "anza-xyz/agave": "v3.1.10",
   "base/node": "v0.14.9",
   "bnb-chain/bsc": "v1.7.1",
-  "category-labs/monad": "v0.13.0+1",
-  "category-labs/monad-bft": "v0.13.0",
+  "category-labs/monad": "v0.13.1",
+  "category-labs/monad-bft": "v0.13.1",
   "ethereum/go-ethereum": "v1.17.1"
 }
