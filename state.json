@@ -1,9 +1,9 @@
 {
   "MystenLabs/sui": "mainnet-v1.71.1",
   "anza-xyz/agave": "v3.1.14",
-  "base/node": "v0.15.5",
+  "base/node": "v0.15.6",
   "bnb-chain/bsc": "v1.7.3",
   "category-labs/monad": "v0.14.3",
   "category-labs/monad-bft": "v0.14.3",
-  "ethereum/go-ethereum": "v1.17.2"
+  "ethereum/go-ethereum": "v1.17.3"
 }
