@@ -1,6 +1,6 @@
 {
   "MystenLabs/sui": "mainnet-v1.74.1",
-  "anza-xyz/agave": "v4.1.0",
+  "anza-xyz/agave": "v4.1.1",
   "base/node": "v1.1.1",
   "bnb-chain/bsc": "v1.7.3",
   "category-labs/monad": "v0.15.0",
