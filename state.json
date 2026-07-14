@@ -1,10 +1,10 @@
 {
-  "MystenLabs/sui": "testnet-v1.75.1",
+  "MystenLabs/sui": "testnet-v1.75.2",
   "anza-xyz/agave": "v4.1.2",
   "base/node": "v1.1.1",
   "bnb-chain/bsc": "v1.7.3",
   "category-labs/monad": "v0.15.0",
-  "category-labs/monad-bft": "v0.15.0",
+  "category-labs/monad-bft": "v0.15.1",
   "ethereum/go-ethereum": "v1.17.4",
   "sigp/lighthouse": "v8.2.0"
 }
