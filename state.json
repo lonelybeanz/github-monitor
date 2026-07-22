@@ -1,7 +1,7 @@
 {
   "MystenLabs/sui": "testnet-v1.76.0",
   "anza-xyz/agave": "v4.1.2",
-  "base/node": "v1.1.1",
+  "base/node": "v1.2.0",
   "bnb-chain/bsc": "v1.7.3",
   "category-labs/monad": "v0.15.2",
   "category-labs/monad-bft": "v0.15.2",
