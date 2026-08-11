@@ -2,7 +2,7 @@
   "MystenLabs/sui": "testnet-v1.77.1",
   "anza-xyz/agave": "v4.2.0",
   "base/node": "v1.2.0",
-  "bnb-chain/bsc": "v1.7.7",
+  "bnb-chain/bsc": "v1.7.8",
   "category-labs/monad": "v0.15.2",
   "category-labs/monad-bft": "v0.16.0",
   "ethereum/go-ethereum": "v1.17.5",
