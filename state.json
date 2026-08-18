@@ -1,5 +1,5 @@
 {
-  "MystenLabs/sui": "mainnet-v1.77.2",
+  "MystenLabs/sui": "testnet-v1.78.0",
   "anza-xyz/agave": "v4.2.1",
   "base/node": "v1.2.0",
   "bnb-chain/bsc": "v1.7.8",
