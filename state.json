@@ -1,5 +1,5 @@
 {
-  "MystenLabs/sui": "testnet-v1.80.0",
+  "MystenLabs/sui": "testnet-v1.80.1",
   "anza-xyz/agave": "v4.3.0",
   "base/base": "v1.4.0",
   "base/node": "v1.2.0",
