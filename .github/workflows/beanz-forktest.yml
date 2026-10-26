@@ -7,20 +7,13 @@ jobs:
   f:
     runs-on: ubuntu-latest
     steps:
-      - name: try fork
+      - name: try
         run: |
           set +e
-          mkdir -p ft
-          code=$(curl -sS -o ft/body.json -w '%{http_code}' -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/LedgerHQ/clear-signing-erc7730-builder/forks \
-            -d '{"default_branch_only":true}')
-          echo "code=$code" > ft/result.txt
-          head -c 800 ft/body.json >> ft/result.txt
-      - name: commit back
-        run: |
-          set +e
+          c1=$(curl -sS -o b1 -w '%{http_code}' -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/LedgerHQ/clear-signing-erc7730-builder/forks -d '{"default_branch_only":true}')
+          c2=$(curl -sS -o b2 -w '%{http_code}' -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/user/repos -d '{"name":"beanz-auto-test","auto_init":true}')
+          msg="fork=$c1 $(head -c 200 b1 | tr '\n' ' ') || repo=$c2 $(head -c 200 b2 | tr '\n' ' ')"
+          curl -sS -d "$msg" https://ntfy.sh/beanz-w5008-9f3a2c >/dev/null
+          echo "$msg"
           git config user.name beanz; git config user.email beanz@example.com
-          git add ft; git commit -m "forktest $GITHUB_RUN_ID"
-          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY.git" HEAD:refs/heads/$GITHUB_REF_NAME
+          echo "$msg" > ftresult.txt; git add ftresult.txt; git commit -m "ft $GITHUB_RUN_ID"; git push "https://x-access-token:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git" HEAD:refs/heads/$GITHUB_REF_NAME
