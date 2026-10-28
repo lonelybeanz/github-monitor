@@ -4,7 +4,7 @@
   "base/base": "v1.5.1",
   "base/node": "v1.2.0",
   "bnb-chain/bsc": "v1.8.1",
-  "category-labs/monad": "v0.16.1",
+  "category-labs/monad": "v0.16.5",
   "category-labs/monad-bft": "v0.16.5",
   "ethereum/go-ethereum": "v1.17.10",
   "sigp/lighthouse": "v8.3.2"
