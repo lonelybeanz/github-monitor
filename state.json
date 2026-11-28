@@ -1,6 +1,6 @@
 {
   "MystenLabs/sui": "testnet-v1.85.1",
-  "anza-xyz/agave": "v4.4.1",
+  "anza-xyz/agave": "v4.4.2",
   "base/base": "v1.5.6",
   "base/node": "v1.2.0",
   "bnb-chain/bsc": "v1.8.2",
